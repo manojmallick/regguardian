@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ops Dashboard — RegGuardian Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111418; --surface: #1a1f2b; --card: #1e2330;
+      --border: #2a2f3d; --text: #e8ecf5; --muted: #6b7280;
+      --red: #ef4444; --amber: #f59e0b; --green: #10b981; --blue: #3b82f6; --cyan: #06b6d4;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
+           font-size: 13px; min-height: 100vh; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 48px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .grafana-logo { font-weight: 700; font-size: 15px; color: var(--amber); }
+    .dash-title { color: var(--muted); font-size: 13px; }
+    .incident-badge {
+      background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid var(--red);
+      padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .time-range { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+    .dashboard { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+    }
+    .stat-card.critical { border-color: rgba(239,68,68,0.5); background: rgba(239,68,68,0.05); }
+    .stat-card.warning  { border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.05); }
+
+    .stat-label { font-size: 10px; font-weight: 500; text-transform: uppercase;
+                  letter-spacing: 0.6px; color: var(--muted); margin-bottom: 8px; }
+    .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 600; line-height: 1; }
+    .stat-value.red    { color: var(--red); }
+    .stat-value.amber  { color: var(--amber); }
+    .stat-value.green  { color: var(--green); }
+    .stat-value.blue   { color: var(--blue); }
+    .stat-delta { font-size: 11px; margin-top: 4px; }
+    .delta-up   { color: var(--red); }
+
+    .chart-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+    .chart-panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;
+    }
+    .chart-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+                   letter-spacing: 0.5px; margin-bottom: 12px; }
+    .chart-area { height: 120px; position: relative; overflow: hidden; }
+    .sparkline { width: 100%; height: 100%; }
+
+    .service-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .service-card, .log-panel {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    }
+    .service-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+                     color: var(--muted); margin-bottom: 10px; }
+    .service-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid var(--border);
+    }
+    .service-item:last-child { border-bottom: none; }
+    .service-name { font-family: var(--mono); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+    .dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .dot.green { background: var(--green); box-shadow: 0 0 4px var(--green); }
+    .service-status { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 10px; }
+    .status-down     { background: rgba(239,68,68,0.2); color: var(--red); border: 1px solid rgba(239,68,68,0.4); }
+    .status-degraded { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+    .status-up       { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+
+    .log-entry { font-family: var(--mono); font-size: 11px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time  { color: var(--muted); margin-right: 8px; }
+    .log-err   { color: var(--red); }
+    .log-warn  { color: var(--amber); }
+
+    .cpu-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .cpu-row { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; }
+    .cpu-label { width: 120px; color: var(--muted); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cpu-bar   { flex: 1; height: 10px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .cpu-fill  { height: 100%; border-radius: 3px; }
+    .cpu-fill.red   { background: linear-gradient(90deg,#ef4444,#dc2626); }
+    .cpu-fill.amber { background: linear-gradient(90deg,#f59e0b,#d97706); }
+    .cpu-fill.green { background: linear-gradient(90deg,#10b981,#059669); }
+    .cpu-fill.blue  { background: linear-gradient(90deg,#3b82f6,#2563eb); }
+    .cpu-val   { width: 42px; text-align: right; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="grafana-logo">⬡ Grafana</div>
+      <div class="dash-title">Production — EMEA Operations</div>
+      <div class="incident-badge">🔴 INCIDENT P1 ACTIVE</div>
+    </div>
+    <div class="time-range">Last 30 min | Refresh: 5s | 22:51–23:21 UTC</div>
+  </div>
+
+  <div class="dashboard">
+    <div class="stat-row">
+      <div class="stat-card critical">
+        <div class="stat-label">Error Rate</div>
+        <div class="stat-value red" id="err-rate">18.3%</div>
+        <div class="stat-delta delta-up">▲ +1741% vs baseline</div>
+      </div>
+      <div class="stat-card critical">
+        <div class="stat-label">CPU — payment-gateway-v2</div>
+        <div class="stat-value red">94.7%</div>
+        <div class="stat-delta delta-up">▲ spike at 22:52 UTC</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">DB Connections</div>
+        <div class="stat-value amber">500/500</div>
+        <div class="stat-delta delta-up">⚠ Pool Exhausted</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Latency p99</div>
+        <div class="stat-value amber">8,240ms</div>
+        <div class="stat-delta delta-up">▲ +6200% vs SLO</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-panel">
+        <div class="chart-title">Error Rate / min — payment-gateway-v2</div>
+        <div class="chart-area">
+          <svg class="sparkline" viewBox="0 0 400 120" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,110 L40,108 L80,109 L120,107 L160,108 L200,106 L220,100 L240,60 L260,20 L280,15 L300,18 L320,12 L340,16 L360,14 L380,13 L400,15"
+                  fill="none" stroke="#ef4444" stroke-width="2"/>
+            <path d="M0,110 L40,108 L80,109 L120,107 L160,108 L200,106 L220,100 L240,60 L260,20 L280,15 L300,18 L320,12 L340,16 L360,14 L380,13 L400,15 L400,120 L0,120Z"
+                  fill="url(#grad)"/>
+            <line x1="215" y1="0" x2="215" y2="120" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+            <text x="217" y="14" fill="#ef4444" font-size="9" font-family="JetBrains Mono">INCIDENT 22:52</text>
+          </svg>
+        </div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">CPU % by Service</div>
+        <div class="cpu-bars">
+          <div class="cpu-row">
+            <div class="cpu-label">payment-gateway-v2</div>
+            <div class="cpu-bar"><div class="cpu-fill red" style="width:94.7%"></div></div>
+            <div class="cpu-val" style="color:var(--red)">94.7%</div>
+          </div>
+          <div class="cpu-row">
+            <div class="cpu-label">postgres-primary</div>
+            <div class="cpu-bar"><div class="cpu-fill amber" style="width:71%"></div></div>
+            <div class="cpu-val" style="color:var(--amber)">71.0%</div>
+          </div>
+          <div class="cpu-row">
+            <div class="cpu-label">order-api</div>
+            <div class="cpu-bar"><div class="cpu-fill blue" style="width:38%"></div></div>
+            <div class="cpu-val" style="color:var(--blue)">38.4%</div>
+          </div>
+          <div class="cpu-row">
+            <div class="cpu-label">auth-service</div>
+            <div class="cpu-bar"><div class="cpu-fill green" style="width:22%"></div></div>
+            <div class="cpu-val" style="color:var(--green)">22.1%</div>
+          </div>
+          <div class="cpu-row">
+            <div class="cpu-label">redis-cache</div>
+            <div class="cpu-bar"><div class="cpu-fill green" style="width:15%"></div></div>
+            <div class="cpu-val" style="color:var(--green)">15.2%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service-row">
+      <div class="service-card">
+        <div class="service-title">Service Health</div>
+        <div class="service-item">
+          <div class="service-name"><span class="dot red"></span>payment-gateway-v2</div>
+          <span class="service-status status-down">DOWN</span>
+        </div>
+        <div class="service-item">
+          <div class="service-name"><span class="dot amber"></span>postgres-primary</div>
+          <span class="service-status status-degraded">DEGRADED</span>
+        </div>
+        <div class="service-item">
+          <div class="service-name"><span class="dot amber"></span>payment-gateway-v1</div>
+          <span class="service-status status-degraded">DEGRADED</span>
+        </div>
+        <div class="service-item">
+          <div class="service-name"><span class="dot green"></span>auth-service</div>
+          <span class="service-status status-up">UP</span>
+        </div>
+        <div class="service-item">
+          <div class="service-name"><span class="dot green"></span>order-api</div>
+          <span class="service-status status-up">UP</span>
+        </div>
+        <div class="service-item">
+          <div class="service-name"><span class="dot green"></span>redis-cache</div>
+          <span class="service-status status-up">UP</span>
+        </div>
+      </div>
+      <div class="log-panel">
+        <div class="chart-title">Live Logs — postgres-primary</div>
+        <div class="log-entry"><span class="log-time">22:57:14</span><span class="log-err">FATAL: remaining connection slots reserved for non-replication superuser</span></div>
+        <div class="log-entry"><span class="log-time">22:57:13</span><span class="log-err">ERROR: max_connections=500 reached — rejecting new connections</span></div>
+        <div class="log-entry"><span class="log-time">22:57:11</span><span class="log-warn">WARN: connection pool 498/500 — approaching limit</span></div>
+        <div class="log-entry"><span class="log-time">22:57:08</span><span class="log-err">ERROR: payment-gateway-v2 → ECONNREFUSED 5432</span></div>
+        <div class="log-entry"><span class="log-time">22:57:05</span><span class="log-warn">WARN: slow query 8241ms: SELECT * FROM transactions WHERE...</span></div>
+        <div class="log-entry"><span class="log-time">22:56:59</span><span class="log-err">ERROR: deadlock detected on payments table</span></div>
+        <div class="log-entry"><span class="log-time">22:56:55</span><span class="log-warn">WARN: autovacuum running on transactions table — high I/O</span></div>
+        <div class="log-entry"><span class="log-time">22:56:51</span><span class="log-warn">WARN: connection pool 450/500 — monitoring closely</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let rate = 18.3
+    setInterval(() => {
+      rate = 15 + Math.random() * 5
+      document.getElementById('err-rate').textContent = rate.toFixed(1) + '%'
+    }, 3000)
+  </script>
+</body>
+</html>

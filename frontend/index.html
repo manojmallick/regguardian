@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RegGuardian — ARIA Incident Command</title>
+  <meta name="description" content="ARIA — Automated Regulatory Incident Analyst. Real-time DORA Article 11 / SOX 404 compliance reporting during live incident war rooms." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Top Status Bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <span class="logo-shield">🛡️</span>
+        <span class="logo-text">RegGuardian</span>
+      </div>
+      <div id="aria-status" class="aria-status aria-idle">
+        <span class="status-dot"></span>
+        <span id="aria-status-text">ARIA IDLE</span>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <div id="incident-meta" class="incident-meta hidden">
+        <span id="incident-id-display" class="incident-id">—</span>
+        <span id="severity-badge" class="severity-badge">—</span>
+        <span id="dora-clock" class="dora-clock hidden">
+          ⏱ DORA: <span id="dora-timer">4:00:00</span>
+        </span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div id="persona-badge" class="persona-badge hidden">Engineering Mode</div>
+      <div id="barge-badge" class="barge-badge hidden">USER INTERRUPTED — RE-PRIORITISING</div>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Layout -->
+  <main class="war-room">
+
+    <!-- Column 1: Incident Controls -->
+    <aside class="panel panel-controls" id="panel-controls">
+      <h2 class="panel-heading">Incident Controls</h2>
+
+      <div class="control-group">
+        <label class="control-label" for="incident-title">Incident Title</label>
+        <input type="text" id="incident-title" class="control-input" placeholder="e.g. Payment Gateway P1" />
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" for="incident-desc">Description (optional)</label>
+        <textarea id="incident-desc" class="control-input control-textarea" placeholder="Brief description..." rows="2"></textarea>
+      </div>
+
+      <button id="btn-start" class="btn btn-primary" onclick="startIncident()">
+        🚨 Start Incident
+      </button>
+
+      <button id="btn-demo" class="btn btn-demo" onclick="runDemo()">
+        ⚡ Run Demo (Synthetic P1)
+      </button>
+
+      <div id="incident-active-controls" class="hidden">
+        <button id="btn-audio" class="btn btn-secondary" onclick="toggleAudio()">
+          🎙️ Start Listening
+        </button>
+        <button id="btn-screen" class="btn btn-secondary" onclick="startScreen()">
+          🖥️ Share Screen
+        </button>
+        <button id="btn-demo-pipeline" class="btn btn-demo-sm hidden" onclick="triggerDemoPipeline()">
+          ⚡ Trigger Demo Pipeline
+        </button>
+        <button id="btn-stop" class="btn btn-danger" onclick="stopIncident()">
+          ⏹ Stop ARIA
+        </button>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="status-label">Audio</span>
+          <span id="audio-status" class="status-value status-off">OFF</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Vision</span>
+          <span id="vision-status" class="status-value status-off">OFF</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">SSE</span>
+          <span id="sse-status" class="status-value status-off">Disconnected</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">DORA</span>
+          <span id="dora-status" class="status-value status-ok">Not Triggered</span>
+        </div>
+      </div>
+
+      <div class="separator"></div>
+
+      <!-- Audio level meter -->
+      <div id="audio-meter-container" class="hidden">
+        <label class="control-label">Audio Level</label>
+        <div class="audio-meter">
+          <div id="audio-bar" class="audio-bar"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Column 2: Live Transcript -->
+    <section class="panel panel-transcript" id="panel-transcript">
+      <h2 class="panel-heading">Live Transcript</h2>
+      <div id="transcript-feed" class="transcript-feed">
+        <div class="transcript-placeholder">
+          <p>Waiting for incident to start…</p>
+          <p class="muted">Start an incident and enable audio to see the live transcript here.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 3: DORA Report -->
+    <section class="panel panel-report" id="panel-report">
+      <div class="report-header">
+        <h2 class="panel-heading">DORA Article 11 Report</h2>
+        <button id="btn-export" class="btn btn-ghost hidden" onclick="exportReport()">↓ Export</button>
+      </div>
+      <div id="report-sections" class="report-sections">
+        <div class="section-placeholder">
+          <div class="section-placeholder-icon">📋</div>
+          <p>Report builds live as the incident unfolds.</p>
+          <p class="muted">Sections appear automatically as ARIA processes signals.</p>
+        </div>
+        <!-- Report sections injected here via SSE -->
+        <div id="sec-TIMELINE"   class="report-section hidden"><h3>📅 Timeline</h3><div class="section-content"></div></div>
+        <div id="sec-BLAST_RADIUS" class="report-section hidden"><h3>💥 Blast Radius</h3><div class="section-content"></div></div>
+        <div id="sec-ROOT_CAUSE" class="report-section hidden"><h3>🔍 Root Cause</h3><div class="section-content"></div></div>
+        <div id="sec-REGULATORY" class="report-section hidden regulatory-section"><h3>⚖️ Regulatory Obligations</h3><div class="section-content"></div></div>
+        <div id="sec-REMEDIATION" class="report-section hidden"><h3>🔧 Remediation</h3><div class="section-content"></div></div>
+        <div id="sec-SUMMARY"   class="report-section hidden summary-section"><h3>📊 Executive Summary</h3><div class="section-content"></div></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="main.js" type="module"></script>
+</body>
+</html>
