@@ -1,11 +1,26 @@
 /**
- * listenerAgent.js
+ * listenerAgent.js — HYBRID ARCHITECTURE (Final Working Version)
  *
- * FIXED: Uses @google/genai (Live API) instead of @google/generative-ai (no Live API support).
- * Root cause of blank transcript: startChat() was used — it has no receiveMessages().
- * The live session hit the fallback (line 107-110) and returned immediately.
+ * Root cause history:
+ *   v1 wrong SDK (@google/generative-ai has no Live API → used startChat)
+ *   v2 wrong systemInstruction format + spurious speechConfig → 1008 immediate close
+ *   v3 wrong model name (gemini-2.0-flash-live-001 → 1008 not found on AI Studio)
+ *   v4 still wrong model (gemini-2.0-flash-exp → also not available for this key)
+ *   v5 native-audio model + TEXT modality → 1007 "Cannot extract voices"
+ *   v6 native-audio + AUDIO+TEXT + systemInstruction → 1007 "Invalid argument"
+ *   v7 DIAGNOSTIC: native-audio + AUDIO only + NO systemInstruction → ✅ STAYS OPEN
+ *   v8 native-audio + AUDIO+TEXT → still 1007 (TEXT modality unsupported)
  *
- * Fix: GoogleGenAI.live.connect() → proper bidirectional Live API WebSocket session.
+ * FINAL ARCHITECTURE:
+ *   Gemini Live  (gemini-2.5-flash-native-audio-latest, AUDIO only)
+ *     → real-time inputTranscription of what participants say
+ *     → when turnComplete, fires a generateContent call
+ *   Gemini Flash (gemini-2.5-flash, generateContent)
+ *     → receives transcript, returns structured JSON incident event
+ *   JSON event → Zod validation → Pub/Sub → SSE → browser transcript + DORA report
+ *
+ * This correctly uses the only bidiGenerateContent models available on this
+ * project's API key, while still running the full live voice → AI pipeline.
  */
 
 import { GoogleGenAI } from '@google/genai'
@@ -17,19 +32,18 @@ import { logger } from '../utils/logger.js'
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
-// ── System prompt ──────────────────────────────────────────────────────────────
-// HARDENED: Very explicit about JSON-only output. Includes complete example.
-// Gemini Live in TEXT mode must return ONLY the JSON object — no preamble, no prose.
-const ARIA_LISTENER_PROMPT = `
-You are ARIA (Automated Regulatory Incident Analyst), running in Listener Mode.
-You are participating LIVE in a production incident call at a regulated financial institution.
+// ── System prompt for structured JSON generation ───────────────────────────────
+// Used by the generateContent call (gemini-2.5-flash), NOT the live session.
+const ARIA_ANALYST_PROMPT = `
+You are ARIA (Automated Regulatory Incident Analyst).
+You are analyzing a live transcription from a production incident call at a regulated financial institution.
 
-YOUR ONLY JOB: Convert every utterance you hear into a structured JSON incident event.
+YOUR ONLY JOB: Convert the transcribed utterance into a structured JSON incident event.
 
 OUTPUT RULES — STRICTLY ENFORCED:
 1. ALWAYS output EXACTLY ONE JSON object. Never output prose, markdown, or explanation.
 2. NEVER wrap the JSON in backticks or markdown code blocks.
-3. If the speaker says nothing meaningful, still output a valid JSON with type "timeline_event".
+3. If the text says nothing meaningful, still output a valid JSON with type "timeline_event".
 4. Every JSON object MUST include ALL fields shown in the schema below.
 
 SCHEMA — all fields required:
@@ -66,7 +80,7 @@ EXAMPLE OUTPUT:
 Remember: output ONLY the JSON object. No other text.
 `
 
-// ── JSON extraction from streaming text ────────────────────────────────────────
+// ── JSON extraction ─────────────────────────────────────────────────────────────
 function tryParseCompleteJSON(text) {
   const trimmed = text.trim()
   const start = trimmed.indexOf('{')
@@ -90,27 +104,36 @@ function tryParseCompleteJSON(text) {
   }
 }
 
-// ── Main export ────────────────────────────────────────────────────────────────
+// ── JSON generation from transcript ────────────────────────────────────────────
 /**
- * Start a Listener Agent for an incident.
- * ONE Live session per incident — reused for all audio chunks.
- * Uses @google/genai Live API (GoogleGenAI.live.connect).
+ * Takes a completed voice transcript and calls gemini-2.5-flash to produce a
+ * structured IncidentEvent JSON. This is separate from the Live session so we
+ * can use a model that actually supports text output.
  */
-export function startListenerAgent(incidentId) {
-  let session  = null
-  let isConnected = false
-  let jsonBuffer  = ''
+async function generateIncidentEvent(transcript, incidentId) {
+  try {
+    logger.info('Generating incident event from transcript', { incidentId, transcript: transcript.slice(0, 100) })
 
-  function handleMessage(message) {
-    // Extract text from Live API message structure
-    const parts = message?.serverContent?.modelTurn?.parts
-    const text = parts?.[0]?.text
-    if (!text) return
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: ARIA_ANALYST_PROMPT,
+        responseMimeType:  'application/json',
+      },
+      contents: [{ role: 'user', parts: [{ text: transcript }] }],
+    })
 
-    jsonBuffer += text
-    const json = tryParseCompleteJSON(jsonBuffer)
-    if (!json) return
-    jsonBuffer = ''
+    const text = response.text
+    if (!text) {
+      logger.warn('Empty response from generateContent', { incidentId })
+      return
+    }
+
+    const json = tryParseCompleteJSON(text)
+    if (!json) {
+      logger.warn('Could not parse JSON from generateContent response', { incidentId, text: text.slice(0, 200) })
+      return
+    }
 
     const result = incidentEventSchema.safeParse(json)
     if (!result.success) {
@@ -119,14 +142,12 @@ export function startListenerAgent(incidentId) {
         errors: result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`)
       })
       pubsubPublish('incident-events-dlq', {
-        raw: json,
-        error: result.error.message,
-        incidentId
+        raw: json, error: result.error.message, incidentId
       }).catch(() => {})
       return
     }
 
-    // Publish to pipeline
+    // Publish to ADK pipeline
     pubsubPublish('incident-events', {
       ...result.data, incidentId, timestamp: Date.now()
     }).catch(err => logger.error('Pub/Sub publish failed', { incidentId, err: err.message }))
@@ -135,28 +156,72 @@ export function startListenerAgent(incidentId) {
     sseManager.broadcast(incidentId, {
       event: 'aria_voice',
       data: {
-        text:         result.data.ariaResponse,
-        persona:      result.data.speakerRole,
-        rawQuote:     result.data.rawQuote,
-        doraTrigger:  result.data.doraTrigger,
-        severity:     result.data.severity,
-        services:     result.data.services,
+        text:        result.data.ariaResponse,
+        persona:     result.data.speakerRole,
+        rawQuote:    result.data.rawQuote,
+        doraTrigger: result.data.doraTrigger,
+        severity:    result.data.severity,
+        services:    result.data.services,
       }
     })
+
+    logger.info('Incident event published', { incidentId, type: result.data.type, severity: result.data.severity })
+
+  } catch (err) {
+    logger.error('generateIncidentEvent failed', { incidentId, err: err.message })
+  }
+}
+
+// ── Main export ────────────────────────────────────────────────────────────────
+/**
+ * Start a Listener Agent for an incident.
+ *
+ * Uses gemini-2.5-flash-native-audio-latest for bidirectional audio streaming
+ * with inputTranscription. When a speech turn completes, the transcript is
+ * forwarded to gemini-2.5-flash generateContent which produces the structured
+ * JSON incident event.
+ */
+export function startListenerAgent(incidentId) {
+  let session          = null
+  let isConnected      = false
+  let isStopped        = false   // prevents reconnect storm after intentional stop()
+  let transcriptBuffer = ''      // accumulates inputTranscription across message chunks
+
+  function handleMessage(message) {
+    const sc = message.serverContent
+    if (!sc) return
+
+    // Accumulate input transcription (real-time transcript of what the participant said)
+    const chunk = sc.inputTranscription?.text
+    if (chunk) {
+      transcriptBuffer += chunk
+    }
+
+    // When the model signals turn complete, we have the full utterance
+    if (sc.turnComplete && transcriptBuffer.trim()) {
+      const transcript = transcriptBuffer.trim()
+      transcriptBuffer = ''
+
+      // Fire-and-forget: call gemini-2.5-flash to generate structured JSON
+      generateIncidentEvent(transcript, incidentId)
+    }
   }
 
   async function connect() {
+    if (isStopped) return
     try {
       logger.info('Connecting to Gemini Live API...', { incidentId })
 
       session = await ai.live.connect({
-        model: 'gemini-2.0-flash-live-001',
+        // gemini-2.5-flash-native-audio-latest:
+        //   ✓ Only model with bidiGenerateContent on this project's API key
+        //   ✓ AUDIO-only responseModalities stays open (confirmed in diagnostic v7)
+        //   ✓ Provides inputTranscription of participant speech
+        model: 'gemini-2.5-flash-native-audio-latest',
         config: {
-          responseModalities: ['TEXT'],  // JSON text output — NOT audio
-          systemInstruction: {
-            parts: [{ text: ARIA_LISTENER_PROMPT }]
-          },
-          speechConfig: { languageCode: 'en-US' }
+          responseModalities: ['AUDIO'],
+          // No systemInstruction here — live model handles transcription only.
+          // ARIA_ANALYST_PROMPT is used by the separate generateContent call.
         },
         callbacks: {
           onopen: () => {
@@ -169,15 +234,23 @@ export function startListenerAgent(incidentId) {
           onerror: (error) => {
             logger.error('Gemini Live error', { incidentId, err: String(error) })
             isConnected = false
-            retryWithBackoff(connect, { maxRetries: 3, baseDelay: 2000 })
-              .catch(e => logger.error('Reconnect failed', { incidentId, err: e.message }))
+            if (!isStopped) {
+              retryWithBackoff(connect, { maxRetries: 3, baseDelay: 2000 })
+                .catch(e => logger.error('Reconnect failed', { incidentId, err: e.message }))
+            }
           },
           onclose: (event) => {
-            logger.warn('Gemini Live session closed', { incidentId, code: event?.code })
+            logger.warn('Gemini Live session closed', {
+              incidentId,
+              code:     event?.code,
+              reason:   event?.reason || '(no reason)',
+              wasClean: event?.wasClean,
+            })
             isConnected = false
-            // Auto-reconnect unless explicitly stopped
-            retryWithBackoff(connect, { maxRetries: 3, baseDelay: 2000 })
-              .catch(e => logger.error('Reconnect failed', { incidentId, err: e.message }))
+            if (!isStopped) {
+              retryWithBackoff(connect, { maxRetries: 3, baseDelay: 2000 })
+                .catch(e => logger.error('Reconnect failed', { incidentId, err: e.message }))
+            }
           }
         }
       })
@@ -185,8 +258,10 @@ export function startListenerAgent(incidentId) {
     } catch (err) {
       logger.error('Gemini Live connect failed', { incidentId, err: err.message })
       isConnected = false
-      retryWithBackoff(connect, { maxRetries: 3, baseDelay: 2000 })
-        .catch(e => logger.error('Final reconnect failed', { incidentId, err: e.message }))
+      if (!isStopped) {
+        retryWithBackoff(connect, { maxRetries: 3, baseDelay: 2000 })
+          .catch(e => logger.error('Final reconnect failed', { incidentId, err: e.message }))
+      }
     }
   }
 
@@ -205,6 +280,7 @@ export function startListenerAgent(incidentId) {
       }
     },
     stop() {
+      isStopped   = true   // must be set BEFORE close() to block onclose reconnect
       isConnected = false
       try { session?.close?.() } catch (_) {}
       logger.info('ARIA Listener stopped', { incidentId })

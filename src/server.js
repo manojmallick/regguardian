@@ -169,7 +169,10 @@ app.post('/api/incidents/:id/demo', async (req, res, next) => {
 
     for (const sectionId of sections) {
       try {
-        const model = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = gemini.getGenerativeModel({
+          model: 'gemini-2.0-flash',
+          generationConfig: { responseMimeType: 'application/json' }
+        })
         const prompt = `You are ARIA, a regulatory compliance AI. Generate ONE section of a live DORA Article 11 / SOX 404 incident report.
 
 INCIDENT CONTEXT:
@@ -184,13 +187,13 @@ INCIDENT CONTEXT:
 YOUR TASK — Write ONLY the ${sectionId} section:
 ${sectionPrompts[sectionId]}
 
-IMPORTANT: Return ONLY this exact JSON, no other text, no markdown fences:
-{"sectionId":"${sectionId}","content":"<your content here>","isUpdate":false,"confidence":0.9}
+IMPORTANT: Return ONLY this exact JSON object (no markdown fences, no extra text):
+{"sectionId":"${sectionId}","content":"<your markdown content here — escape newlines as \\n>","isUpdate":false,"confidence":0.9}
 
 Use markdown in content: **bold** for key terms, bullet lists with *, timestamps in ISO format.`
 
         const result = await model.generateContent(prompt)
-        const text = result.response.text().trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '')
+        const text = result.response.text().trim()
         const section = JSON.parse(text)
 
         // Ensure sectionId matches expected (prevent Gemini from overriding)

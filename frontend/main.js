@@ -37,8 +37,8 @@ window.startIncident = async function () {
     document.getElementById('incident-meta').classList.remove('hidden')
     document.getElementById('incident-active-controls').classList.remove('hidden')
     document.getElementById('btn-start').classList.add('hidden')
-    document.getElementById('btn-export').classList.remove('hidden')
-    document.getElementById('btn-demo-pipeline').classList.remove('hidden')
+    document.getElementById('btn-export')?.classList.remove('hidden')
+    document.getElementById('btn-demo-pipeline')?.classList.remove('hidden')
 
     setAriaStatus('active', 'ARIA ACTIVE')
     connectSSE()
@@ -525,8 +525,7 @@ window.triggerDemoPipeline = async function () {
 // One-click demo: creates incident, connects SSE, fires demo pipeline
 window.runDemo = async function () {
   const btn = document.getElementById('btn-demo')
-  btn.textContent = '⏳ Starting demo...'
-  btn.disabled = true
+  if (btn) { btn.textContent = '⏳ Starting demo...'; btn.disabled = true }
 
   try {
     // 1. Create incident with demo title
@@ -544,10 +543,10 @@ window.runDemo = async function () {
     document.getElementById('incident-id-display').textContent = incidentId
     document.getElementById('incident-meta').classList.remove('hidden')
     document.getElementById('incident-active-controls').classList.remove('hidden')
-    document.getElementById('btn-start').classList.add('hidden')
-    document.getElementById('btn-demo').classList.add('hidden')
-    document.getElementById('btn-export').classList.remove('hidden')
-    document.getElementById('btn-demo-pipeline').classList.remove('hidden')
+    document.getElementById('btn-start')?.classList.add('hidden')
+    document.getElementById('btn-demo')?.classList.add('hidden')
+    document.getElementById('btn-export')?.classList.remove('hidden')
+    document.getElementById('btn-demo-pipeline')?.classList.remove('hidden')
 
     setAriaStatus('active', 'ARIA ACTIVE')
     connectSSE()
@@ -566,8 +565,7 @@ window.runDemo = async function () {
   } catch (err) {
     console.error('Demo failed', err)
     addSystemMessage('Demo failed: ' + err.message)
-    btn.textContent = '⚡ Run Demo (Synthetic P1)'
-    btn.disabled = false
+    if (btn) { btn.textContent = '⚡ Run Demo (Synthetic P1)'; btn.disabled = false }
   }
 }
 

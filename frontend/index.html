@@ -1,14 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RegGuardian — ARIA Incident Command</title>
-  <meta name="description" content="ARIA — Automated Regulatory Incident Analyst. Real-time DORA Article 11 / SOX 404 compliance reporting during live incident war rooms." />
+  <meta name="description"
+    content="ARIA — Automated Regulatory Incident Analyst. Real-time DORA Article 11 / SOX 404 compliance reporting during live incident war rooms." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <!-- Top Status Bar -->
   <header class="topbar">
@@ -51,16 +56,17 @@
 
       <div class="control-group">
         <label class="control-label" for="incident-desc">Description (optional)</label>
-        <textarea id="incident-desc" class="control-input control-textarea" placeholder="Brief description..." rows="2"></textarea>
+        <textarea id="incident-desc" class="control-input control-textarea" placeholder="Brief description..."
+          rows="2"></textarea>
       </div>
 
       <button id="btn-start" class="btn btn-primary" onclick="startIncident()">
         🚨 Start Incident
       </button>
 
-      <button id="btn-demo" class="btn btn-demo" onclick="runDemo()">
+      <!-- <button id="btn-demo" class="btn btn-demo" onclick="runDemo()">
         ⚡ Run Demo (Synthetic P1)
-      </button>
+      </button> -->
 
       <div id="incident-active-controls" class="hidden">
         <button id="btn-audio" class="btn btn-secondary" onclick="toggleAudio()">
@@ -69,9 +75,9 @@
         <button id="btn-screen" class="btn btn-secondary" onclick="startScreen()">
           🖥️ Share Screen
         </button>
-        <button id="btn-demo-pipeline" class="btn btn-demo-sm hidden" onclick="triggerDemoPipeline()">
+        <!-- <button id="btn-demo-pipeline" class="btn btn-demo-sm hidden" onclick="triggerDemoPipeline()">
           ⚡ Trigger Demo Pipeline
-        </button>
+        </button> -->
         <button id="btn-stop" class="btn btn-danger" onclick="stopIncident()">
           ⏹ Stop ARIA
         </button>
@@ -133,12 +139,30 @@
           <p class="muted">Sections appear automatically as ARIA processes signals.</p>
         </div>
         <!-- Report sections injected here via SSE -->
-        <div id="sec-TIMELINE"   class="report-section hidden"><h3>📅 Timeline</h3><div class="section-content"></div></div>
-        <div id="sec-BLAST_RADIUS" class="report-section hidden"><h3>💥 Blast Radius</h3><div class="section-content"></div></div>
-        <div id="sec-ROOT_CAUSE" class="report-section hidden"><h3>🔍 Root Cause</h3><div class="section-content"></div></div>
-        <div id="sec-REGULATORY" class="report-section hidden regulatory-section"><h3>⚖️ Regulatory Obligations</h3><div class="section-content"></div></div>
-        <div id="sec-REMEDIATION" class="report-section hidden"><h3>🔧 Remediation</h3><div class="section-content"></div></div>
-        <div id="sec-SUMMARY"   class="report-section hidden summary-section"><h3>📊 Executive Summary</h3><div class="section-content"></div></div>
+        <div id="sec-TIMELINE" class="report-section hidden">
+          <h3>📅 Timeline</h3>
+          <div class="section-content"></div>
+        </div>
+        <div id="sec-BLAST_RADIUS" class="report-section hidden">
+          <h3>💥 Blast Radius</h3>
+          <div class="section-content"></div>
+        </div>
+        <div id="sec-ROOT_CAUSE" class="report-section hidden">
+          <h3>🔍 Root Cause</h3>
+          <div class="section-content"></div>
+        </div>
+        <div id="sec-REGULATORY" class="report-section hidden regulatory-section">
+          <h3>⚖️ Regulatory Obligations</h3>
+          <div class="section-content"></div>
+        </div>
+        <div id="sec-REMEDIATION" class="report-section hidden">
+          <h3>🔧 Remediation</h3>
+          <div class="section-content"></div>
+        </div>
+        <div id="sec-SUMMARY" class="report-section hidden summary-section">
+          <h3>📊 Executive Summary</h3>
+          <div class="section-content"></div>
+        </div>
       </div>
     </section>
 
@@ -146,4 +170,5 @@
 
   <script src="main.js" type="module"></script>
 </body>
+
 </html>
