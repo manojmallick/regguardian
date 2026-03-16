@@ -1,0 +1,352 @@
+<mxfile host="app.diagrams.net" modified="2026-03-16" version="21.0.0">
+  <diagram name="RegGuardian ARIA Architecture" id="regguardian-arch">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- TITLE -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="title" value="RegGuardian — ARIA Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#1a1a2e;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="854" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Gemini Live Agent Challenge 2026 · github.com/manojmallick/regguardian" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="400" y="55" width="854" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- SWIM LANE 1: BROWSER / WAR ROOM -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="lane1" value="🎙️  Browser / War Room" style="swimlane;startSize=40;fillColor=#e8f4f8;strokeColor=#1565C0;fontStyle=1;fontSize=13;fontColor=#1565C0;swimlaneLine=1;swimlaneHead=0;rounded=10;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="1574" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- Mic + AudioWorklet -->
+        <mxCell id="mic" value="🎙️ Microphone&#xa;AudioWorklet&#xa;Float32→Int16 PCM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="70" width="150" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Screen Capture -->
+        <mxCell id="screen" value="🖥️ Screen Capture&#xa;MediaDevices API&#xa;PNG every 5s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="110" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Browser UI -->
+        <mxCell id="ui" value="⬛ War Room UI&#xa;3-column dark theme&#xa;SSE transcript · DORA report&#xa;Persona badge · DORA clock" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="240" y="75" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- WebSocket Audio -->
+        <mxCell id="ws-audio-label" value="WebSocket&#xa;PCM 16kHz" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#1565C0;" vertex="1" parent="lane1">
+          <mxGeometry x="195" y="80" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- WebSocket Screen -->
+        <mxCell id="ws-screen-label" value="WebSocket&#xa;PNG frames" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#1565C0;" vertex="1" parent="lane1">
+          <mxGeometry x="195" y="115" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- SSE -->
+        <mxCell id="sse-label" value="SSE stream&#xa;← reports" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontColor=#1565C0;" vertex="1" parent="lane1">
+          <mxGeometry x="448" y="115" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Grafana mock -->
+        <mxCell id="grafana" value="📊 Grafana Dashboard&#xa;prod-emea-01&#xa;(shared screen)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;" vertex="1" parent="lane1">
+          <mxGeometry x="30" y="130" width="150" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Arrow: mic → ws audio -->
+        <mxCell id="e-mic-ws" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;" edge="1" source="mic" target="ui" parent="lane1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- SWIM LANE 2: CLOUD RUN / AGENT PIPELINE -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="lane2" value="☁️  Cloud Run — ARIA Agent Pipeline  (Node.js 20 · 2 vCPU · 2 GB · min-instances=1)" style="swimlane;startSize=40;fillColor=#f3e5f5;strokeColor=#6A1B9A;fontStyle=1;fontSize=13;fontColor=#6A1B9A;swimlaneLine=1;swimlaneHead=0;rounded=10;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="40" y="330" width="1574" height="380" as="geometry" />
+        </mxCell>
+
+        <!-- Express Server -->
+        <mxCell id="express" value="⚙️ Express Server&#xa;server.js&#xa;REST + WS + SSE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="30" y="70" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Audio Gateway -->
+        <mxCell id="audio-gw" value="audioGateway.js&#xa;WS lifecycle&#xa;→ listenerAgent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="lane2">
+          <mxGeometry x="210" y="55" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Screen Gateway -->
+        <mxCell id="screen-gw" value="screenGateway.js&#xa;WS lifecycle&#xa;→ visionAgent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="lane2">
+          <mxGeometry x="210" y="125" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Listener Agent box -->
+        <mxCell id="listener" value="🎙️ Listener Agent&#xa;listenerAgent.js&#xa;&#xa;Gemini Live&#xa;gemini-2.5-flash-&#xa;native-audio-latest&#xa;AUDIO modality only&#xa;→ inputTranscription" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="390" y="40" width="160" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- generateContent call -->
+        <mxCell id="gen-content" value="generateContent&#xa;gemini-2.5-flash&#xa;ARIA_ANALYST_PROMPT&#xa;→ IncidentEvent JSON&#xa;Zod validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="lane2">
+          <mxGeometry x="600" y="40" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Vision Agent -->
+        <mxCell id="vision" value="🖥️ Vision Agent&#xa;visionAgent.js&#xa;&#xa;Gemini Vision&#xa;gemini-2.5-flash&#xa;Screenshot analysis&#xa;→ VisualContext JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="390" y="195" width="160" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Pub/Sub publish -->
+        <mxCell id="pubsub-publish" value="Pub/Sub Publish&#xa;incident-events&#xa;visual-contexts" style="shape=mxgraph.gcp2.pubsub;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#ffffff;fontSize=10;fontStyle=1;whiteSpace=wrap;" vertex="1" parent="lane2">
+          <mxGeometry x="800" y="100" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Analyst Agent -->
+        <mxCell id="analyst" value="🧠 Analyst Agent&#xa;analystAgent.js&#xa;&#xa;Root cause&#xa;Blast radius&#xa;Sub: incident-events&#xa;visual-contexts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="990" y="55" width="150" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Compliance Agent -->
+        <mxCell id="compliance" value="⚖️ Compliance Agent&#xa;complianceAgent.js&#xa;&#xa;DORA Art. 11.1(a/b/c)&#xa;SOX Section 404&#xa;Sub: incident-analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="990" y="200" width="150" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- Reporter Agent -->
+        <mxCell id="reporter" value="📋 Reporter Agent&#xa;reporterAgent.js&#xa;&#xa;6 report sections&#xa;SSE broadcast&#xa;Firestore write&#xa;Sub: compliance-mappings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="lane2">
+          <mxGeometry x="1200" y="130" width="150" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- SSE Manager -->
+        <mxCell id="sse-mgr" value="📡 SSE Manager&#xa;sseManager.js&#xa;Heartbeat · Broadcast&#xa;→ Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="lane2">
+          <mxGeometry x="1400" y="130" width="130" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Circuit Breaker / Retry -->
+        <mxCell id="middleware" value="🔁 Middleware&#xa;Circuit Breaker (opossum)&#xa;Retry w/ backoff&#xa;DLQ on schema fail" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="lane2">
+          <mxGeometry x="600" y="230" width="150" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Edges in lane 2 -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A1B9A;strokeWidth=2;" edge="1" source="express" target="audio-gw" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A1B9A;strokeWidth=2;" edge="1" source="express" target="screen-gw" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#388E3C;strokeWidth=2;" edge="1" source="audio-gw" target="listener" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#388E3C;strokeWidth=2;" edge="1" source="screen-gw" target="vision" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="transcript" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#388E3C;strokeWidth=2;fontSize=9;" edge="1" source="listener" target="gen-content" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="IncidentEvent" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;fontSize=9;" edge="1" source="gen-content" target="pubsub-publish" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="VisualContext" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;fontSize=9;" edge="1" source="vision" target="pubsub-publish" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F57C00;strokeWidth=2;" edge="1" source="pubsub-publish" target="analyst" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F57C00;strokeWidth=2;" edge="1" source="analyst" target="compliance" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F57C00;strokeWidth=2;" edge="1" source="compliance" target="reporter" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A1B9A;strokeWidth=2;" edge="1" source="reporter" target="sse-mgr" parent="lane2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- SWIM LANE 3: GCP MANAGED SERVICES -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="lane3" value="🏗️  GCP Managed Services  (Terraform-provisioned)" style="swimlane;startSize=40;fillColor=#e8f5e9;strokeColor=#2E7D32;fontStyle=1;fontSize=13;fontColor=#2E7D32;swimlaneLine=1;swimlaneHead=0;rounded=10;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="40" y="730" width="1574" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- Gemini Live API -->
+        <mxCell id="gcp-gemini-live" value="Gemini Live API&#xa;gemini-2.5-flash-&#xa;native-audio-latest&#xa;bidiGenerateContent&#xa;AI Studio key" style="shape=mxgraph.gcp2.generic_gcp_product_icononly;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="60" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Gemini Flash -->
+        <mxCell id="gcp-gemini-flash" value="Gemini 2.5 Flash&#xa;generateContent&#xa;responseMimeType:&#xa;application/json" style="shape=mxgraph.gcp2.generic_gcp_product_icononly;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="220" y="60" width="160" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Pub/Sub -->
+        <mxCell id="gcp-pubsub" value="Cloud Pub/Sub&#xa;4 topics + 4 DLQs&#xa;incident-events&#xa;visual-contexts&#xa;incident-analysis&#xa;compliance-mappings" style="shape=mxgraph.gcp2.pubsub;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="420" y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Firestore -->
+        <mxCell id="gcp-firestore" value="Cloud Firestore&#xa;incidents collection&#xa;report sections&#xa;Real-time state" style="shape=mxgraph.gcp2.datastore;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="620" y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Cloud Storage -->
+        <mxCell id="gcp-storage" value="Cloud Storage&#xa;regguardian-screenshots&#xa;regguardian-reports&#xa;PNG archive" style="shape=mxgraph.gcp2.cloud_storage;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="820" y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Artifact Registry -->
+        <mxCell id="gcp-ar" value="Artifact Registry&#xa;Docker images&#xa;regguardian/app" style="shape=mxgraph.gcp2.container_registry;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="1020" y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Cloud Build -->
+        <mxCell id="gcp-build" value="Cloud Build&#xa;cloudbuild.yaml&#xa;CI/CD pipeline&#xa;git push → deploy" style="shape=mxgraph.gcp2.cloud_build;html=1;fillColor=#4285F4;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="1220" y="50" width="160" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Secret Manager -->
+        <mxCell id="gcp-secret" value="Secret Manager&#xa;GEMINI_API_KEY&#xa;(never in env plaintext)" style="shape=mxgraph.gcp2.key_management_service;html=1;fillColor=#F57C00;strokeColor=none;fontColor=#333333;fontSize=10;fontStyle=1;whiteSpace=wrap;align=center;verticalAlign=top;spacingTop=5;" vertex="1" parent="lane3">
+          <mxGeometry x="1420" y="50" width="130" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Terraform label -->
+        <mxCell id="tf-label" value="All provisioned by Terraform (terraform/main.tf)" style="text;html=1;strokeColor=none;fillColor=#e8f5e9;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=2;fontColor=#2E7D32;" vertex="1" parent="lane3">
+          <mxGeometry x="40" y="200" width="1510" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- CROSS-LANE ARROWS -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Browser mic → Cloud Run audio gateway -->
+        <mxCell id="cross1" value="WS /ws/audio&#xa;PCM 16kHz" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;fontSize=9;entryX=0.1;entryY=0;entryDx=0;entryDy=0;" edge="1" source="mic" target="audio-gw" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="115" y="270" />
+              <mxPoint x="255" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Browser screen → Cloud Run screen gateway -->
+        <mxCell id="cross2" value="WS /ws/screen&#xa;PNG frames" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;fontSize=9;" edge="1" source="screen" target="screen-gw" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="115" y="310" />
+              <mxPoint x="275" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- SSE Manager → Browser UI -->
+        <mxCell id="cross3" value="SSE /report/stream&#xa;transcript · DORA report" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#E91E63;strokeWidth=2;fontSize=9;dashed=1;" edge="1" source="sse-mgr" target="ui" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1465" y="290" />
+              <mxPoint x="1465" y="265" />
+              <mxPoint x="340" y="265" />
+              <mxPoint x="340" y="220" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Cloud Run Listener → Gemini Live API (lane3) -->
+        <mxCell id="cross4" value="bidiGenerateContent&#xa;AUDIO modality" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#388E3C;strokeWidth=2;fontSize=9;" edge="1" source="listener" target="gcp-gemini-live" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="470" y="620" />
+              <mxPoint x="120" y="620" />
+              <mxPoint x="120" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- generateContent → Gemini Flash (lane3) -->
+        <mxCell id="cross5" value="generateContent" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#388E3C;strokeWidth=2;fontSize=9;" edge="1" source="gen-content" target="gcp-gemini-flash" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="675" y="640" />
+              <mxPoint x="300" y="640" />
+              <mxPoint x="300" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Pub/Sub node → GCP Pub/Sub -->
+        <mxCell id="cross6" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;strokeWidth=2;" edge="1" source="pubsub-publish" target="gcp-pubsub" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="860" y="660" />
+              <mxPoint x="500" y="660" />
+              <mxPoint x="500" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Reporter → Firestore -->
+        <mxCell id="cross7" value="write incident&#xa;+ report sections" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F57C00;strokeWidth=2;fontSize=9;" edge="1" source="reporter" target="gcp-firestore" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1275" y="670" />
+              <mxPoint x="700" y="670" />
+              <mxPoint x="700" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Vision → Cloud Storage -->
+        <mxCell id="cross8" value="archive PNG" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F57C00;strokeWidth=2;fontSize=9;" edge="1" source="vision" target="gcp-storage" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="550" y="680" />
+              <mxPoint x="900" y="680" />
+              <mxPoint x="900" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Cloud Build → Artifact Registry → Cloud Run (annotated) -->
+        <mxCell id="cross9" value="docker push" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#757575;strokeWidth=1;dashed=1;fontSize=9;" edge="1" source="gcp-build" target="gcp-ar" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Secret Manager → Cloud Run (lane2 express) -->
+        <mxCell id="cross10" value="GEMINI_API_KEY" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F57C00;strokeWidth=1;dashed=1;fontSize=9;" edge="1" source="gcp-secret" target="express" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1485" y="700" />
+              <mxPoint x="1485" y="700" />
+              <mxPoint x="100" y="700" />
+              <mxPoint x="100" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- LEGEND -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#cccccc;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="500" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="Legend" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1045" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" value="━━  Audio / Transcript data" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#1565C0;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1065" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" value="━━  Agent pipeline (Pub/Sub)" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#F57C00;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1085" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" value="╌╌  SSE back to browser" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#E91E63;" vertex="1" parent="1">
+          <mxGeometry x="270" y="1065" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" value="╌╌  Secret / Config injection" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=10;fontColor=#F57C00;" vertex="1" parent="1">
+          <mxGeometry x="270" y="1085" width="200" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
