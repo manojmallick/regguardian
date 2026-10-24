@@ -107,7 +107,21 @@ npm test
 | `VERTEX_SEARCH_DATASTORE_RUNBOOKS` | | Vertex AI Search datastore ID for runbooks |
 | `VERTEX_SEARCH_DATASTORE_REGULATORY` | | Vertex AI Search datastore ID for DORA/SOX corpus |
 
+| `PUBSUB_SUB_INCIDENT_EVENTS`, `PUBSUB_SUB_VISUAL_CONTEXTS`, `PUBSUB_SUB_INCIDENT_ANALYSIS` | | Pub/Sub subscription names matching the topics above |
+| `FIRESTORE_COLLECTION_REPORTS`, `FIRESTORE_COLLECTION_RUNBOOKS` | | Firestore collections for reports and runbooks |
+| `PORT` | | HTTP port for the server |
+| `NODE_ENV` | | `development` or `production` |
+
 See [`.env.example`](./.env.example) for the full list with defaults.
+
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm start` | Run the server (`node src/server.js`) |
+| `npm run dev` | Run with nodemon (restarts on change) |
+| `npm test` | Schema tests; no GCP needed |
+| `npm run test:integration` | Runs `test/integration/*.test.js`. **That folder does not exist yet**, so this script currently has nothing to run |
 
 ## Cloud Deployment (Terraform + Cloud Run)
 
